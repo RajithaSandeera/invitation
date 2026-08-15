@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wedding-pink: #F3E5EC;
+  --color-wedding-rose: #D48B9F;
+  --color-wedding-gold: #C5A059;
+  --color-wedding-darkGold: #A37F37;
+  --color-wedding-emerald: #1C3A36;
+  --color-wedding-teal: #2B5752;
+  --color-wedding-slate: #2C3E4C;
+  --color-wedding-lightBg: #FAF7F5;
+  --color-wedding-cream: #FFFDF9;
+
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-cursive: 'Alex Brush', cursive;
+  --font-cinzel: 'Cinzel', serif;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #FAF7F5;
+    color: #2C3E4C;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .font-serif-title {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-cursive {
+    font-family: 'Alex Brush', cursive;
+  }
+
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+/* Glassmorphism styling */
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 30px -5px rgba(28, 58, 54, 0.08);
+}
+
+.glass-card-dark {
+  background: rgba(28, 58, 54, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF7F5;
+}
+::-webkit-scrollbar-thumb {
+  background: #D48B9F;
+  border-radius: 4px;
+}
