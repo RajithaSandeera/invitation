@@ -29,7 +29,7 @@ export const weddingData = {
       icon: "Sparkles"
     },
     {
-      time: "09:35 AM",
+      time: "09:38 AM",
       title: "Traditional Poruwa Ceremony",
       description: "Witness the sacred Poruwa rituals, exchange of rings, Jayamangala Gatha blessings, and tying of the nuptial thread.",
       icon: "Heart"
