@@ -60,9 +60,17 @@ export const weddingData = {
     }
   ],
   photos: {
-    hero: "/images/photo1.jpg",
-    story: "/images/photo2.jpg",
-    moments: "/images/photo3.jpg"
+    hero: "/images/1.jpeg",
+    story: "/images/2.jpeg",
+    moments: "/images/3.jpeg"
   },
+  gallery: [
+    { id: 1, src: "/images/1.jpeg", title: "Sweet Embrace", caption: "Cherished togetherness and warm smiles" },
+    { id: 2, src: "/images/2.jpeg", title: "Hand in Hand", caption: "Walking into a beautiful future together" },
+    { id: 3, src: "/images/3.jpeg", title: "Pure Joy", caption: "Unforgettable moments of laughter and love" },
+    { id: 4, src: "/images/4.jpeg", title: "Romantic Moments", caption: "Every glance speaks a thousand feelings" },
+    { id: 5, src: "/images/5.jpeg", title: "Golden Memories", caption: "A love story framed in warmth and elegance" },
+    { id: 6, src: "/images/6.jpeg", title: "Forever & Always", caption: "Beginning life's grandest journey together" }
+  ],
   drinkOptions: []
 };

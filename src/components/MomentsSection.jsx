@@ -1,12 +1,89 @@
-import React, { useState } from 'react';
-import { Heart, Play, Camera, Sparkles, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Heart, Camera, Sparkles, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { weddingData } from '../config/weddingData';
 
 export default function MomentsSection({ onOpenRSVP }) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const galleryItems = weddingData.gallery && weddingData.gallery.length > 0
+    ? weddingData.gallery
+    : [
+        { id: 1, src: "/images/1.jpeg", title: "Sweet Embrace", caption: "Cherished togetherness" },
+        { id: 2, src: "/images/2.jpeg", title: "Hand in Hand", caption: "Walking into a beautiful future" },
+        { id: 3, src: "/images/3.jpeg", title: "Pure Joy", caption: "Moments of laughter and love" },
+        { id: 4, src: "/images/4.jpeg", title: "Romantic Moments", caption: "Every glance speaks a thousand feelings" },
+        { id: 5, src: "/images/5.jpeg", title: "Golden Memories", caption: "A love story framed in warmth" },
+        { id: 6, src: "/images/6.jpeg", title: "Forever & Always", caption: "Beginning life's grandest journey" }
+      ];
+
+  const handlePrev = useCallback(() => {
+    setSelectedIndex((prev) => (prev === 0 ? galleryItems.length - 1 : prev - 1));
+  }, [galleryItems.length]);
+
+  const handleNext = useCallback(() => {
+    setSelectedIndex((prev) => (prev === galleryItems.length - 1 ? 0 : prev + 1));
+  }, [galleryItems.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (selectedIndex === null) return;
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'Escape') setSelectedIndex(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, handlePrev, handleNext]);
 
   return (
-    <section id="moments" className="py-16 sm:py-24 px-4 max-w-4xl mx-auto space-y-16">
+    <section id="moments" className="py-16 sm:py-24 px-4 max-w-5xl mx-auto space-y-16">
+      {/* Our Gallery / Moments Header */}
+      <div className="space-y-8">
+        <div className="text-center space-y-3">
+          <div className="inline-flex p-3.5 rounded-full bg-wedding-pink text-wedding-rose mb-1 shadow-sm">
+            <Camera className="w-6 h-6 text-wedding-rose" />
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-serif font-bold text-wedding-emerald">
+            Our Moments
+          </h2>
+          <p className="text-sm sm:text-base text-wedding-slate/80 max-w-md mx-auto font-light">
+            A glimpse into our journey of love & togetherness
+          </p>
+        </div>
+
+        {/* Gallery Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          {galleryItems.map((item, index) => (
+            <div
+              key={item.id || index}
+              onClick={() => setSelectedIndex(index)}
+              className="group relative h-64 sm:h-72 rounded-2xl overflow-hidden shadow-lg border-2 border-white cursor-pointer transform transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl"
+            >
+              <img
+                src={item.src}
+                alt={item.title || `Gallery photo ${index + 1}`}
+                className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-300" />
+              
+              {/* Expand Icon on Hover */}
+              <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-md p-2 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 border border-white/30">
+                <Maximize2 className="w-4 h-4" />
+              </div>
+
+              {/* Title & Caption */}
+              <div className="absolute bottom-4 left-4 right-4 text-white space-y-1 transform group-hover:translate-y-0 transition-transform duration-300">
+                <h3 className="font-serif font-semibold text-lg text-wedding-pink leading-tight">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-white/80 line-clamp-1 font-light">
+                  {item.caption}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Can't Wait To See You Banner */}
       <div className="glass-card rounded-3xl p-8 sm:p-12 text-center shadow-xl relative overflow-hidden bg-gradient-to-br from-wedding-pink/30 via-white to-wedding-pink/20">
         <Sparkles className="w-8 h-8 text-wedding-gold/40 absolute top-4 left-4" />
@@ -33,70 +110,81 @@ export default function MomentsSection({ onOpenRSVP }) {
         </button>
       </div>
 
-      {/* Our Moments Section Header */}
-      {/* <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-full bg-wedding-pink text-wedding-rose mb-1">
-            <Camera className="w-6 h-6 text-wedding-rose" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-wedding-emerald">
-            Our Moments
-          </h2>
-          <p className="text-sm text-wedding-slate/80">
-            A glimpse into our journey of love
-          </p>
-        </div>
-
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white group cursor-pointer" onClick={() => setModalOpen(true)}>
-          <img
-            src={weddingData.photos.moments}
-            alt="Dishan and Pabodha moments photo"
-            className="w-full h-[300px] sm:h-[450px] object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-90"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-          <div className="absolute top-4 left-4 flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white">
-            <div className="w-7 h-7 rounded-full bg-wedding-rose flex items-center justify-center font-bold text-xs">
-              {weddingData.couple.groom[0]}{weddingData.couple.bride[0]}
-            </div>
-            <div>
-              <p className="text-xs font-semibold leading-tight">{weddingData.couple.title}</p>
-              <p className="text-[10px] text-white/70">Sunset Moments</p>
-            </div>
-          </div>
-
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-wedding-rose/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-115 transition-transform duration-300">
-              <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 fill-white" />
-            </div>
-          </div>
-
-          <div className="absolute bottom-4 left-4 right-4 text-white text-xs sm:text-sm flex items-center justify-between">
-            <span className="font-serif italic text-wedding-pink">Click to view memory photo</span>
-            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[11px]">{weddingData.event.dateFormatted}</span>
-          </div>
-        </div>
-      </div> */}
-
       {/* Fullscreen Photo Lightbox Modal */}
-      {/* {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" onClick={() => setModalOpen(false)}>
-          <button className="absolute top-6 right-6 text-white hover:text-wedding-rose p-2">
-            <X className="w-8 h-8" />
-          </button>
-          <div className="max-w-4xl w-full" onClick={e => e.stopPropagation()}>
-            <img
-              src={weddingData.photos.moments}
-              alt={`${weddingData.couple.title} photo`}
-              className="w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-            />
-            <p className="text-center text-white/80 font-serif text-lg mt-4 italic">
-              "Love is composed of a single soul inhabiting two bodies." — {weddingData.couple.title}
-            </p>
+      {selectedIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/92 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-fadeIn"
+          onClick={() => setSelectedIndex(null)}
+        >
+          {/* Top Bar */}
+          <div className="flex items-center justify-between text-white z-10" onClick={(e) => e.stopPropagation()}>
+            <span className="text-xs sm:text-sm font-medium tracking-widest uppercase bg-white/10 px-3 py-1 rounded-full border border-white/20">
+              Photo {selectedIndex + 1} of {galleryItems.length}
+            </span>
+            <button
+              onClick={() => setSelectedIndex(null)}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors border border-white/20"
+              aria-label="Close photo modal"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Main Photo View with Nav Buttons */}
+          <div className="relative flex-1 flex items-center justify-center my-2" onClick={(e) => e.stopPropagation()}>
+            {/* Prev Button */}
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 sm:left-4 z-20 p-3 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all border border-white/20 shadow-lg"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+
+            {/* Photo */}
+            <div className="max-w-4xl max-h-[72vh] flex flex-col items-center justify-center px-4">
+              <img
+                src={galleryItems[selectedIndex].src}
+                alt={galleryItems[selectedIndex].title}
+                className="max-h-[65vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 transition-all duration-300"
+              />
+              <div className="text-center mt-3 text-white space-y-1">
+                <h4 className="font-serif text-xl sm:text-2xl text-wedding-pink">
+                  {galleryItems[selectedIndex].title}
+                </h4>
+                <p className="text-xs sm:text-sm text-white/75 font-light italic">
+                  {galleryItems[selectedIndex].caption}
+                </p>
+              </div>
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={handleNext}
+              className="absolute right-2 sm:right-4 z-20 p-3 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all border border-white/20 shadow-lg"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Bottom Thumbnail Strip */}
+          <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-10" onClick={(e) => e.stopPropagation()}>
+            {galleryItems.map((item, idx) => (
+              <button
+                key={item.id || idx}
+                onClick={() => setSelectedIndex(idx)}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                  idx === selectedIndex ? 'border-wedding-rose scale-110 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100'
+                }`}
+              >
+                <img src={item.src} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
           </div>
         </div>
-      )} */}
+      )}
     </section>
   );
 }
+

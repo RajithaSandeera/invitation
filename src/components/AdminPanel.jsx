@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, LogOut, Download, Search, Users, UserCheck, Phone, RefreshCw, Trash2, Plus, X, Check, ShieldCheck, Heart, Filter, FileSpreadsheet, ExternalLink } from 'lucide-react';
 import { adminConfig } from '../config/adminConfig';
-import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel, getGoogleSheetUrl, setGoogleSheetUrl } from '../utils/rsvpStorage';
+import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel, getGoogleSheetUrl, setGoogleSheetUrl, fetchRSVPsFromGoogleSheets } from '../utils/rsvpStorage';
 
 export default function AdminPanel({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -17,6 +17,7 @@ export default function AdminPanel({ isOpen, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sideFilter, setSideFilter] = useState('ALL'); // 'ALL', 'Groom', 'Bride'
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'yes', 'no'
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Manual Add Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -44,8 +45,19 @@ export default function AdminPanel({ isOpen, onClose }) {
     }
   }, [isOpen, isAuthenticated]);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setRsvps(getAllRSVPs());
+    setIsSyncing(true);
+    try {
+      const remoteData = await fetchRSVPsFromGoogleSheets();
+      if (remoteData) {
+        setRsvps(remoteData);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleLogin = (e) => {
@@ -127,6 +139,35 @@ export default function AdminPanel({ isOpen, onClose }) {
   ]);
   
   return ContentService.createTextOutput("Success");
+}
+
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) {
+    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  var rsvps = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    rsvps.push({
+      id: 'gsheet-' + i,
+      timestamp: r[0],
+      name: r[1],
+      phone: r[2],
+      side: r[3] && r[3].indexOf('Groom') !== -1 ? 'Groom' : 'Bride',
+      attending: r[4] === 'Declined' ? 'no' : 'yes',
+      guestCount: parseInt(r[5]) || 1,
+      guestNames: r[6] === 'None' ? '' : r[6],
+      foodPreference: r[7] && r[7].indexOf('Vegetarian') !== -1 && r[7].indexOf('Non') === -1 ? 'veg' : 'non-veg',
+      needsDrinks: r[8] && r[8].indexOf('Yes') !== -1 ? 'yes' : 'no',
+      dietaryNotes: r[9] === 'None' ? '' : r[9],
+      checkedIn: false
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(rsvps)).setMimeType(ContentService.MimeType.JSON);
 }`;
 
   const copyScriptCode = () => {
@@ -294,6 +335,17 @@ export default function AdminPanel({ isOpen, onClose }) {
 
               {/* Filters & Actions */}
               <div className="flex flex-wrap items-center gap-2">
+                {/* Sync Sheet Live Button */}
+                <button
+                  onClick={refreshData}
+                  disabled={isSyncing}
+                  className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2.5 rounded-xl border border-white/15 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  title="Sync latest live RSVPs from Google Sheet"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-blue-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Syncing...' : 'Sync Sheet'}
+                </button>
+
                 {/* Side Filter */}
                 <select
                   value={sideFilter}

@@ -105,6 +105,31 @@ export async function sendToGoogleSheets(record) {
   }
 }
 
+// Fetch all RSVPs directly from Google Sheet webhook
+export async function fetchRSVPsFromGoogleSheets() {
+  const webhookUrl = getGoogleSheetUrl();
+  if (!webhookUrl || !webhookUrl.startsWith('http')) return null;
+
+  try {
+    const res = await fetch(webhookUrl);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      const existing = getAllRSVPs();
+      // Keep local check-in statuses if matching ID/phone exists
+      const merged = data.map(item => {
+        const match = existing.find(e => (e.id && e.id === item.id) || (e.phone && e.phone === item.phone));
+        return match ? { ...item, checkedIn: match.checkedIn } : item;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+  } catch (err) {
+    console.error("Error fetching RSVPs from Google Sheet:", err);
+  }
+  return null;
+}
+
 // Add or update an RSVP record
 export function saveRSVPRecord(record) {
   const rsvps = getAllRSVPs();
