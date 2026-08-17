@@ -19,7 +19,7 @@ export const weddingData = {
     address: "No 123, Puwakdeniya, Kegalle - Rambukkana Rd, Karandupana",
     googleMapsUrl: "https://www.google.com/maps?daddr=No123,+Puwakdeniya,+Kegalle+-+Rambukkana+Rd,+Karandupana",
     wazeUrl: "https://waze.com/ul?q=Sleek+Camellia+Kegalle",
-    hostWhatsAppPhone: "0711292927", // Host phone number for direct WhatsApp RSVP messages
+    hostWhatsAppPhone: "+94711292927", // Host phone number for direct WhatsApp RSVP messages
   },
   schedule: [
     {
