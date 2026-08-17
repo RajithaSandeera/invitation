@@ -5,48 +5,7 @@ const GOOGLE_SHEET_URL_KEY = 'wedding_google_sheet_url';
 
 // Sample initial data if database is empty
 const defaultSamples = [
-  {
-    id: 'rsvp-1',
-    name: 'Nuwan Pradeep',
-    phone: '0771234567',
-    side: 'Groom', // 'Groom' or 'Bride'
-    attending: 'yes',
-    guestCount: 2,
-    guestNames: 'Dilhani Perera',
-    foodPreference: 'non-veg',
-    needsDrinks: 'yes',
-    dietaryNotes: 'No seafood',
-    timestamp: new Date().toISOString(),
-    checkedIn: true
-  },
-  {
-    id: 'rsvp-2',
-    name: 'Samanthika Silva',
-    phone: '0719876543',
-    side: 'Bride',
-    attending: 'yes',
-    guestCount: 1,
-    guestNames: '',
-    foodPreference: 'veg',
-    needsDrinks: 'no',
-    dietaryNotes: 'Strictly Vegetarian',
-    timestamp: new Date().toISOString(),
-    checkedIn: false
-  },
-  {
-    id: 'rsvp-3',
-    name: 'Kamal Fernando',
-    phone: '0754443322',
-    side: 'Groom',
-    attending: 'no',
-    guestCount: 0,
-    guestNames: '',
-    foodPreference: 'non-veg',
-    needsDrinks: 'no',
-    dietaryNotes: '',
-    timestamp: new Date().toISOString(),
-    checkedIn: false
-  }
+  
 ];
 
 // Fetch all RSVPs
