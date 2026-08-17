@@ -34,7 +34,7 @@ export default function MomentsSection({ onOpenRSVP }) {
       </div>
 
       {/* Our Moments Section Header */}
-      <div className="space-y-6">
+      {/* <div className="space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 rounded-full bg-wedding-pink text-wedding-rose mb-1">
             <Camera className="w-6 h-6 text-wedding-rose" />
@@ -47,7 +47,6 @@ export default function MomentsSection({ onOpenRSVP }) {
           </p>
         </div>
 
-        {/* Video / Photo Memory Card (Matching reference screenshot bottom player style) */}
         <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white group cursor-pointer" onClick={() => setModalOpen(true)}>
           <img
             src={weddingData.photos.moments}
@@ -55,10 +54,8 @@ export default function MomentsSection({ onOpenRSVP }) {
             className="w-full h-[300px] sm:h-[450px] object-cover object-center group-hover:scale-105 transition-transform duration-700 filter brightness-90"
           />
 
-          {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          {/* Top Left Title Badge */}
           <div className="absolute top-4 left-4 flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white">
             <div className="w-7 h-7 rounded-full bg-wedding-rose flex items-center justify-center font-bold text-xs">
               {weddingData.couple.groom[0]}{weddingData.couple.bride[0]}
@@ -69,23 +66,21 @@ export default function MomentsSection({ onOpenRSVP }) {
             </div>
           </div>
 
-          {/* Center Play Button Overlay */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-wedding-rose/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-115 transition-transform duration-300">
               <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 fill-white" />
             </div>
           </div>
 
-          {/* Bottom Bar */}
           <div className="absolute bottom-4 left-4 right-4 text-white text-xs sm:text-sm flex items-center justify-between">
             <span className="font-serif italic text-wedding-pink">Click to view memory photo</span>
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[11px]">{weddingData.event.dateFormatted}</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Fullscreen Photo Lightbox Modal */}
-      {modalOpen && (
+      {/* {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" onClick={() => setModalOpen(false)}>
           <button className="absolute top-6 right-6 text-white hover:text-wedding-rose p-2">
             <X className="w-8 h-8" />
@@ -101,7 +96,7 @@ export default function MomentsSection({ onOpenRSVP }) {
             </p>
           </div>
         </div>
-      )}
+      )} */}
     </section>
   );
 }

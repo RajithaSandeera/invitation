@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, LogOut, Download, Search, Users, UserCheck, Phone, RefreshCw, Trash2, Plus, X, Check, ShieldCheck, Heart, Filter } from 'lucide-react';
+import { Lock, LogOut, Download, Search, Users, UserCheck, Phone, RefreshCw, Trash2, Plus, X, Check, ShieldCheck, Heart, Filter, FileSpreadsheet, ExternalLink } from 'lucide-react';
 import { adminConfig } from '../config/adminConfig';
-import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel } from '../utils/rsvpStorage';
+import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel, getGoogleSheetUrl, setGoogleSheetUrl } from '../utils/rsvpStorage';
 
 export default function AdminPanel({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -32,9 +32,15 @@ export default function AdminPanel({ isOpen, onClose }) {
     dietaryNotes: ''
   });
 
+  // Google Sheet Modal State
+  const [showSheetModal, setShowSheetModal] = useState(false);
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [copyStatus, setCopyStatus] = useState(false);
+
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       refreshData();
+      setSheetUrl(getGoogleSheetUrl());
     }
   }, [isOpen, isAuthenticated]);
 
@@ -90,6 +96,43 @@ export default function AdminPanel({ isOpen, onClose }) {
       needsDrinks: 'yes',
       dietaryNotes: ''
     });
+  };
+
+  const handleSaveSheetUrl = (e) => {
+    e.preventDefault();
+    setGoogleSheetUrl(sheetUrl);
+    setShowSheetModal(false);
+    alert("Google Sheet Webhook URL saved successfully!");
+  };
+
+  const appsScriptCode = `function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp", "Name", "Phone", "Side", "Status", "Headcount", "Plus Ones", "Meal", "Drinks", "Dietary Notes"]);
+  }
+  
+  sheet.appendRow([
+    data.timestamp,
+    data.name,
+    data.phone,
+    data.side,
+    data.attending,
+    data.guestCount,
+    data.guestNames,
+    data.foodPreference,
+    data.needsDrinks,
+    data.dietaryNotes
+  ]);
+  
+  return ContentService.createTextOutput("Success");
+}`;
+
+  const copyScriptCode = () => {
+    navigator.clipboard.writeText(appsScriptCode);
+    setCopyStatus(true);
+    setTimeout(() => setCopyStatus(false), 2000);
   };
 
   if (!isOpen) return null;
@@ -235,7 +278,7 @@ export default function AdminPanel({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* CONTROLS BAR: SEARCH, FILTERS, EXPORT & ADD */}
+            {/* CONTROLS BAR: SEARCH, FILTERS, GOOGLE SHEET & EXPORT */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-800/80 p-3.5 rounded-2xl border border-white/10">
               {/* Phone / Name Search Lookup Input */}
               <div className="relative flex-1">
@@ -273,10 +316,21 @@ export default function AdminPanel({ isOpen, onClose }) {
                   <option value="no">Declined Only</option>
                 </select>
 
+                {/* Google Sheet Sync Settings Button */}
+                <button
+                  onClick={() => setShowSheetModal(true)}
+                  className={`text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition-transform active:scale-95 flex items-center gap-1.5 border ${
+                    sheetUrl ? 'bg-green-700 hover:bg-green-600 border-green-500 text-white' : 'bg-slate-700 hover:bg-slate-600 border-white/20 text-white/90'
+                  }`}
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-green-400" />
+                  {sheetUrl ? 'Google Sheet Active' : 'Connect Google Sheet'}
+                </button>
+
                 {/* Export Excel Button */}
                 <button
                   onClick={() => exportToExcel(rsvps)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition-transform active:scale-95 flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow transition-transform active:scale-95 flex items-center gap-1.5"
                 >
                   <Download className="w-4 h-4" />
                   Export Excel (.xlsx)
@@ -401,6 +455,71 @@ export default function AdminPanel({ isOpen, onClose }) {
           </div>
         )}
       </div>
+
+      {/* GOOGLE SHEET SYNC SETUP MODAL */}
+      {showSheetModal && (
+        <div className="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-white/20 p-6 rounded-3xl max-w-lg w-full space-y-5 text-white max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-green-400" />
+                <h3 className="text-lg font-bold font-serif">Connect Google Sheets Webhook</h3>
+              </div>
+              <button onClick={() => setShowSheetModal(false)} className="text-white/60 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSheetUrl} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
+                  Google Apps Script Webhook URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl text-xs shadow"
+              >
+                Save Webhook URL
+              </button>
+            </form>
+
+            <div className="bg-slate-800 p-4 rounded-2xl border border-white/10 space-y-3 text-xs text-white/80">
+              <h4 className="font-bold text-green-400 uppercase tracking-wider">⚡ 2-Minute Google Sheet Setup Instructions:</h4>
+              <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed">
+                <li>Create a new blank spreadsheet at <b>sheet.new</b></li>
+                <li>In Google Sheets, click <b>Extensions ➜ Apps Script</b></li>
+                <li>Delete any default code, paste the snippet below, and click <b>Save</b> (💾 icon):</li>
+              </ol>
+
+              {/* Code snippet block */}
+              <div className="relative bg-black/60 p-3 rounded-xl border border-white/10 font-mono text-[10px] text-emerald-300 space-y-2">
+                <button
+                  onClick={copyScriptCode}
+                  className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded text-[10px] transition-colors"
+                >
+                  {copyStatus ? 'Copied! ✅' : 'Copy Code'}
+                </button>
+                <pre className="overflow-x-auto whitespace-pre-wrap">{appsScriptCode}</pre>
+              </div>
+
+              <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed start-4" start={4}>
+                <li>Click <b>Deploy ➜ New deployment</b></li>
+                <li>Select type: <b>Web app</b></li>
+                <li>Set Execute as: <b>Me</b>, and Who has access: <b>Anyone</b></li>
+                <li>Click <b>Deploy</b>, authorize permissions, and copy the <b>Web App URL</b> into the box above!</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MANUAL ADD GUEST MODAL */}
       {showAddModal && (

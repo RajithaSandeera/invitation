@@ -1,5 +1,5 @@
 export const adminConfig = {
   defaultUsername: "admin",
-  defaultPassword: "wedding2026",
+  defaultPassword: "weddingRD2026",
   title: "Rajitha & Divya — Admin Portal"
 };

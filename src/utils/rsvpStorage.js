@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 
 const STORAGE_KEY = 'wedding_all_rsvps_database';
+const GOOGLE_SHEET_URL_KEY = 'wedding_google_sheet_url';
 
 // Sample initial data if database is empty
 const defaultSamples = [
@@ -63,6 +64,47 @@ export function getAllRSVPs() {
   }
 }
 
+// Google Sheet Webhook Sync
+export function getGoogleSheetUrl() {
+  return localStorage.getItem(GOOGLE_SHEET_URL_KEY) || '';
+}
+
+export function setGoogleSheetUrl(url) {
+  localStorage.setItem(GOOGLE_SHEET_URL_KEY, url.trim());
+}
+
+export async function sendToGoogleSheets(record) {
+  const webhookUrl = getGoogleSheetUrl();
+  if (!webhookUrl || !webhookUrl.startsWith('http')) return;
+
+  try {
+    const payload = {
+      name: record.name,
+      phone: record.phone || 'N/A',
+      side: record.side === 'Groom' ? "Groom's Side (Rajitha)" : "Bride's Side (Divya)",
+      attending: record.attending === 'yes' ? 'Attending' : 'Declined',
+      guestCount: record.guestCount,
+      guestNames: record.guestNames || 'None',
+      foodPreference: record.foodPreference === 'veg' ? 'Vegetarian 🥗' : 'Non-Vegetarian 🍗',
+      needsDrinks: record.needsDrinks === 'yes' ? 'Yes 🥂' : 'No 🥤',
+      dietaryNotes: record.dietaryNotes || 'None',
+      timestamp: new Date(record.timestamp || Date.now()).toLocaleString()
+    };
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    console.log("Successfully sent RSVP entry to Google Sheet webhook.");
+  } catch (err) {
+    console.error("Error sending to Google Sheet webhook:", err);
+  }
+}
+
 // Add or update an RSVP record
 export function saveRSVPRecord(record) {
   const rsvps = getAllRSVPs();
@@ -90,6 +132,10 @@ export function saveRSVPRecord(record) {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rsvps));
+
+  // Trigger async background sync to Google Sheet
+  sendToGoogleSheets(newRecord);
+
   return newRecord;
 }
 
