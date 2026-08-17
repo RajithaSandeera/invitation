@@ -66,7 +66,7 @@ export function getAllRSVPs() {
 
 // Google Sheet Webhook Sync
 export function getGoogleSheetUrl() {
-  return localStorage.getItem(GOOGLE_SHEET_URL_KEY) || '';
+  return localStorage.getItem(GOOGLE_SHEET_URL_KEY) || 'https://script.google.com/macros/s/AKfycbyVQ0OCfI2loEArRlQBdwWWDcH1BHbPWos20vmeGogX2R7wf71z6YMdT2kfTeeZhFH1/exec';
 }
 
 export function setGoogleSheetUrl(url) {
