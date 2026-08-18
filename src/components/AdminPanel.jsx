@@ -47,7 +47,7 @@ export default function AdminPanel({ isOpen, onClose }) {
       // Auto-poll Google Sheet every 12 seconds for cross-device updates
       const interval = setInterval(() => {
         refreshData();
-      }, 12000);
+      }, 92000);
       return () => clearInterval(interval);
     }
   }, [isOpen, isAuthenticated]);
