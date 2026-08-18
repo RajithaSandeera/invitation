@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, LogOut, Download, Search, Users, UserCheck, Phone, RefreshCw, Trash2, Plus, X, Check, ShieldCheck, Heart, Filter, FileSpreadsheet, ExternalLink } from 'lucide-react';
+import { Lock, LogOut, Download, Search, Users, UserCheck, Phone, RefreshCw, Trash2, Plus, X, Check, ShieldCheck, Heart, Filter, FileSpreadsheet, ExternalLink, Link } from 'lucide-react';
 import { adminConfig } from '../config/adminConfig';
-import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel, getGoogleSheetUrl, setGoogleSheetUrl, fetchRSVPsFromGoogleSheets } from '../utils/rsvpStorage';
+import { getAllRSVPs, saveRSVPRecord, deleteRSVPRecord, toggleCheckIn, exportToExcel, getGoogleSheetUrl, setGoogleSheetUrl, fetchRSVPsFromGoogleSheets, getGoogleSheetDocUrl, setGoogleSheetDocUrl } from '../utils/rsvpStorage';
 
 export default function AdminPanel({ isOpen, onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -37,17 +37,19 @@ export default function AdminPanel({ isOpen, onClose }) {
   // Google Sheet Modal State
   const [showSheetModal, setShowSheetModal] = useState(false);
   const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetDocUrl, setSheetDocUrl] = useState('');
   const [copyStatus, setCopyStatus] = useState(false);
 
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       refreshData();
       setSheetUrl(getGoogleSheetUrl());
+      setSheetDocUrl(getGoogleSheetDocUrl());
 
-      // Auto-poll Google Sheet every 12 seconds for cross-device updates
+      // Auto-poll Google Sheet every 10 seconds for cross-device updates
       const interval = setInterval(() => {
         refreshData();
-      }, 92000);
+      }, 90000);
       return () => clearInterval(interval);
     }
   }, [isOpen, isAuthenticated]);
@@ -60,7 +62,8 @@ export default function AdminPanel({ isOpen, onClose }) {
       const result = await fetchRSVPsFromGoogleSheets();
       if (result && result.success) {
         setRsvps(result.data);
-        setSyncStatusMsg({ type: 'success', text: `Synced ${result.data.length} guest records live from Google Sheet!` });
+        const methodText = result.method === 'csv' ? 'Direct CSV Sync' : 'Apps Script Webhook';
+        setSyncStatusMsg({ type: 'success', text: `Synced ${result.data.length} guest records live from Google Sheet (${methodText})!` });
       } else if (result && !result.success) {
         setSyncStatusMsg({ type: 'error', text: result.error });
       }
@@ -125,9 +128,10 @@ export default function AdminPanel({ isOpen, onClose }) {
   const handleSaveSheetUrl = (e) => {
     e.preventDefault();
     setGoogleSheetUrl(sheetUrl);
+    setGoogleSheetDocUrl(sheetDocUrl);
     setShowSheetModal(false);
     refreshData();
-    alert("Google Sheet Webhook URL saved successfully!");
+    alert("Google Sheet connection settings saved successfully!");
   };
 
   const appsScriptCode = `function doPost(e) {
@@ -569,24 +573,42 @@ function doGet(e) {
               </button>
             </div>
 
-            <form onSubmit={handleSaveSheetUrl} className="space-y-3">
+            <form onSubmit={handleSaveSheetUrl} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-green-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <Link className="w-3.5 h-3.5" />
+                  Google Sheet Browser Link (For 100% CORS-Free Live Sync) ⭐ RECOMMENDED
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit"
+                  value={sheetDocUrl}
+                  onChange={(e) => setSheetDocUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-green-500/40 text-white text-xs placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                />
+                <p className="text-[10px] text-white/60 mt-1">
+                  Paste your Google Sheet URL from your browser address bar. Make sure the sheet sharing is set to <b>"Anyone with the link can view"</b> in Google Sheets!
+                </p>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-white/80 uppercase tracking-wider mb-1">
-                  Google Apps Script Webhook URL
+                  Google Apps Script Webhook URL (For Form Submissions)
                 </label>
                 <input
                   type="url"
                   placeholder="https://script.google.com/macros/s/.../exec"
                   value={sheetUrl}
                   onChange={(e) => setSheetUrl(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                 />
               </div>
+
               <button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl text-xs shadow"
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition-transform active:scale-95"
               >
-                Save Webhook URL
+                Save Connection Settings
               </button>
             </form>
 

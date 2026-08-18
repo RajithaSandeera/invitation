@@ -64,17 +64,114 @@ export async function sendToGoogleSheets(record) {
   }
 }
 
-// Fetch all RSVPs directly from Google Sheet webhook
+const GOOGLE_SHEET_DOC_URL_KEY = 'wedding_google_sheet_doc_url';
+
+export function getGoogleSheetDocUrl() {
+  return localStorage.getItem(GOOGLE_SHEET_DOC_URL_KEY) || '';
+}
+
+export function setGoogleSheetDocUrl(url) {
+  localStorage.setItem(GOOGLE_SHEET_DOC_URL_KEY, url.trim());
+}
+
+export function extractSpreadsheetId(urlStr) {
+  if (!urlStr) return null;
+  const match = urlStr.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : (urlStr.length > 20 && !urlStr.includes('/') ? urlStr.trim() : null);
+}
+
+// Parse CSV text into RSVP objects
+export function parseGoogleSheetCsv(csvText) {
+  const lines = csvText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length <= 1) return [];
+
+  const parseRow = (text) => {
+    const res = [];
+    let curr = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (c === '"') {
+        inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        res.push(curr.trim().replace(/^"|"$/g, ''));
+        curr = '';
+      } else {
+        curr += c;
+      }
+    }
+    res.push(curr.trim().replace(/^"|"$/g, ''));
+    return res;
+  };
+
+  const rows = lines.map(parseRow);
+  const rsvps = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[1] || r[1].trim() === '' || r[1].toLowerCase() === 'name' || r[1].toLowerCase() === 'guest name') continue;
+
+    const sideVal = r[3] ? r[3] : 'Groom';
+    const statusVal = r[4] ? r[4].toLowerCase() : 'attending';
+    const mealVal = r[7] ? r[7].toLowerCase() : 'non-veg';
+    const drinksVal = r[8] ? r[8].toLowerCase() : 'yes';
+
+    rsvps.push({
+      id: `gsheet-${i}-${r[1]}`,
+      timestamp: r[0] || new Date().toISOString(),
+      name: r[1].trim(),
+      phone: r[2] ? r[2].trim() : 'N/A',
+      side: sideVal.indexOf('Bride') !== -1 || sideVal.indexOf('Divya') !== -1 ? 'Bride' : 'Groom',
+      attending: statusVal.indexOf('declined') !== -1 || statusVal.indexOf('no') !== -1 || statusVal.indexOf('not') !== -1 ? 'no' : 'yes',
+      guestCount: parseInt(r[5]) || 1,
+      guestNames: (!r[6] || r[6] === 'None') ? '' : r[6].trim(),
+      foodPreference: mealVal.indexOf('veg') !== -1 && mealVal.indexOf('non') === -1 ? 'veg' : 'non-veg',
+      needsDrinks: drinksVal.indexOf('yes') !== -1 || drinksVal.indexOf('🥂') !== -1 ? 'yes' : 'no',
+      dietaryNotes: (!r[9] || r[9] === 'None') ? '' : r[9].trim(),
+      checkedIn: false
+    });
+  }
+
+  return rsvps;
+}
+
+// Fetch all RSVPs directly from Google Sheet CSV API or Webhook
 export async function fetchRSVPsFromGoogleSheets() {
   const webhookUrl = getGoogleSheetUrl();
+  const docUrl = getGoogleSheetDocUrl();
+  const spreadsheetId = extractSpreadsheetId(docUrl) || extractSpreadsheetId(webhookUrl);
+
+  // METHOD 1: Direct Google Sheet CSV fetch (100% CORS-free, works on all browsers/devices)
+  if (spreadsheetId) {
+    try {
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv`;
+      const res = await fetch(csvUrl);
+      if (res.ok) {
+        const csvText = await res.text();
+        const parsedData = parseGoogleSheetCsv(csvText);
+        
+        const existing = getAllRSVPs();
+        const merged = parsedData.map(item => {
+          const match = existing.find(e => (e.id && e.id === item.id) || (e.phone && e.phone === item.phone));
+          return match ? { ...item, checkedIn: match.checkedIn } : item;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        return { success: true, data: merged, method: 'csv' };
+      }
+    } catch (csvErr) {
+      console.warn("Direct CSV fetch failed, trying Apps Script GET...", csvErr);
+    }
+  }
+
+  // METHOD 2: Webhook GET Request
   if (!webhookUrl || !webhookUrl.startsWith('http')) {
-    return { success: false, error: "No Google Sheet Webhook URL configured." };
+    return { success: false, error: "Please enter your Google Sheet link or Webhook URL in settings." };
   }
 
   try {
     const res = await fetch(webhookUrl);
     if (!res.ok) {
-      return { success: false, error: `Google Sheet webhook returned HTTP ${res.status}: ${res.statusText}` };
+      return { success: false, error: `Google Sheet webhook returned HTTP ${res.status}` };
     }
     
     const rawText = await res.text();
@@ -82,29 +179,30 @@ export async function fetchRSVPsFromGoogleSheets() {
     try {
       data = JSON.parse(rawText);
     } catch (parseErr) {
-      console.error("Google Sheet webhook returned non-JSON response:", rawText.substring(0, 250));
       return { 
         success: false, 
-        error: "Google Apps Script returned web page HTML instead of JSON. You MUST update your Apps Script deployment: Click 'Deploy ➜ Manage deployments ➜ Edit (pencil icon) ➜ Version: New version ➜ Deploy'." 
+        error: "Google Apps Script returned HTML (CORS issue). Solution: Paste your main Google Sheet Link (https://docs.google.com/spreadsheets/d/...) in settings for instant direct sync!" 
       };
     }
 
     if (Array.isArray(data)) {
       const existing = getAllRSVPs();
-      // Keep local check-in statuses if matching ID/phone exists
       const merged = data.map(item => {
         const match = existing.find(e => (e.id && e.id === item.id) || (e.phone && e.phone === item.phone));
         return match ? { ...item, checkedIn: match.checkedIn } : item;
       });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      return { success: true, data: merged };
-    } else {
-      return { success: false, error: "Google Sheet script output is not an array." };
+      return { success: true, data: merged, method: 'webhook' };
     }
   } catch (err) {
     console.error("Error fetching RSVPs from Google Sheet:", err);
-    return { success: false, error: err.message || "Network error while connecting to Google Sheet." };
+    return { 
+      success: false, 
+      error: "Browser blocked cross-origin request (Failed to fetch). Fix: Paste your main Google Sheet Link (https://docs.google.com/spreadsheets/d/...) into settings for instant CORS-free sync!" 
+    };
   }
+
+  return { success: false, error: "Could not fetch Google Sheet data." };
 }
 
 // Add or update an RSVP record
