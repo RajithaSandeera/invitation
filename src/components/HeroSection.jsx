@@ -1,22 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, Calendar, MapPin, ChevronDown } from 'lucide-react';
 import { weddingData } from '../config/weddingData';
-import { getGoogleCalendarUrl, getOutlookCalendarUrl, downloadIcsFile } from '../utils/calendarUtils';
+import { getGoogleCalendarUrl } from '../utils/calendarUtils';
 
 export default function HeroSection({ onOpenRSVP }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const heroMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (heroMenuRef.current && !heroMenuRef.current.contains(e.target)) {
-        setCalendarOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const targetDate = new Date(weddingData.event.dateIso).getTime();
@@ -56,57 +44,21 @@ export default function HeroSection({ onOpenRSVP }) {
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60" />
       </div>
 
-      {/* Main Content */}
+        {/* Main Content */}
       <div className="relative z-10 text-center text-white max-w-xl mx-auto w-full space-y-6 animate-fadeIn">
-        {/* Interactive Save The Date Badge Dropdown */}
-        <div className="relative inline-block z-20" ref={heroMenuRef}>
-          <button
-            onClick={() => setCalendarOpen(!calendarOpen)}
-            className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-full text-xs uppercase tracking-widest text-wedding-pink border border-white/30 shadow-lg transition-all transform hover:scale-105"
-            title="Click to Save to Google / Apple Calendar"
+        {/* Direct Google Calendar Save The Date Button */}
+        <div className="relative inline-block z-20">
+          <a
+            href={getGoogleCalendarUrl(weddingData)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/35 backdrop-blur-md px-5 py-2.5 rounded-full text-xs uppercase tracking-widest text-wedding-pink border border-white/35 shadow-lg transition-all transform hover:scale-105"
+            title="Click to add event directly to Google Calendar"
           >
             <Heart className="w-3.5 h-3.5 fill-wedding-pink text-wedding-pink" />
-            <span className="font-semibold">Save The Date</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${calendarOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {calendarOpen && (
-            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-white/95 backdrop-blur-md text-wedding-slate rounded-2xl shadow-2xl border border-white/50 p-2 z-30 space-y-1 text-left animate-fadeIn">
-              <p className="text-[10px] uppercase font-bold text-wedding-slate/60 px-3 py-1 tracking-wider">
-                Add to your calendar
-              </p>
-              <a
-                href={getGoogleCalendarUrl(weddingData)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setCalendarOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-xl transition-colors font-medium text-wedding-slate"
-              >
-                <span className="text-base">📅</span>
-                Google Calendar
-              </a>
-              <button
-                onClick={() => {
-                  downloadIcsFile(weddingData);
-                  setCalendarOpen(false);
-                }}
-                className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-xl transition-colors font-medium text-wedding-slate"
-              >
-                <span className="text-base">🍏</span>
-                Apple Calendar (.ics)
-              </button>
-              <a
-                href={getOutlookCalendarUrl(weddingData)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setCalendarOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-xl transition-colors font-medium text-wedding-slate"
-              >
-                <span className="text-base">📧</span>
-                Outlook Web
-              </a>
-            </div>
-          )}
+            <span className="font-semibold">Save The Date (Google Calendar)</span>
+            <Calendar className="w-3.5 h-3.5 text-wedding-rose ml-1" />
+          </a>
         </div>
 
         {/* Couple Names */}

@@ -67,12 +67,28 @@ export async function sendToGoogleSheets(record) {
 // Fetch all RSVPs directly from Google Sheet webhook
 export async function fetchRSVPsFromGoogleSheets() {
   const webhookUrl = getGoogleSheetUrl();
-  if (!webhookUrl || !webhookUrl.startsWith('http')) return null;
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return { success: false, error: "No Google Sheet Webhook URL configured." };
+  }
 
   try {
     const res = await fetch(webhookUrl);
-    if (!res.ok) return null;
-    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: `Google Sheet webhook returned HTTP ${res.status}: ${res.statusText}` };
+    }
+    
+    const rawText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error("Google Sheet webhook returned non-JSON response:", rawText.substring(0, 250));
+      return { 
+        success: false, 
+        error: "Google Apps Script returned web page HTML instead of JSON. You MUST update your Apps Script deployment: Click 'Deploy ➜ Manage deployments ➜ Edit (pencil icon) ➜ Version: New version ➜ Deploy'." 
+      };
+    }
+
     if (Array.isArray(data)) {
       const existing = getAllRSVPs();
       // Keep local check-in statuses if matching ID/phone exists
@@ -81,12 +97,14 @@ export async function fetchRSVPsFromGoogleSheets() {
         return match ? { ...item, checkedIn: match.checkedIn } : item;
       });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      return merged;
+      return { success: true, data: merged };
+    } else {
+      return { success: false, error: "Google Sheet script output is not an array." };
     }
   } catch (err) {
     console.error("Error fetching RSVPs from Google Sheet:", err);
+    return { success: false, error: err.message || "Network error while connecting to Google Sheet." };
   }
-  return null;
 }
 
 // Add or update an RSVP record

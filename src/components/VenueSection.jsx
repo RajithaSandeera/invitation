@@ -1,22 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MapPin, Clock, ExternalLink, Navigation, Calendar, ChevronDown, Download } from 'lucide-react';
+import React from 'react';
+import { MapPin, Clock, ExternalLink, Navigation, Calendar } from 'lucide-react';
 import { weddingData } from '../config/weddingData';
-import { getGoogleCalendarUrl, getOutlookCalendarUrl, downloadIcsFile } from '../utils/calendarUtils';
+import { getGoogleCalendarUrl, downloadIcsFile } from '../utils/calendarUtils';
 
 export default function VenueSection() {
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setCalendarOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   return (
     <section id="venue" className="py-16 sm:py-24 px-4 max-w-4xl mx-auto">
       {/* Section Header */}
@@ -70,53 +57,26 @@ export default function VenueSection() {
               {weddingData.event.timeFormatted}
             </div>
 
-            {/* Add to Calendar Dropdown Button */}
-            <div className="relative pt-1" ref={menuRef}>
-              <button
-                onClick={() => setCalendarOpen(!calendarOpen)}
-                className="w-full bg-wedding-rose hover:bg-wedding-rose/90 text-white font-medium text-xs py-2 px-3 rounded-xl shadow flex items-center justify-between gap-1 transition-all"
+            {/* Direct Google Calendar Link & Apple .ics option */}
+            <div className="pt-1 flex flex-col gap-1.5">
+              <a
+                href={getGoogleCalendarUrl(weddingData)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-wedding-rose hover:bg-wedding-rose/90 text-white font-semibold text-xs py-2 px-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition-all transform hover:-translate-y-0.5"
+                title="Directly add to Google Calendar"
               >
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Add to Calendar
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${calendarOpen ? 'rotate-180' : ''}`} />
+                <Calendar className="w-3.5 h-3.5" />
+                Add to Google Calendar
+              </a>
+              
+              <button
+                onClick={() => downloadIcsFile(weddingData)}
+                className="w-full bg-white/15 hover:bg-white/25 text-white/90 font-medium text-[11px] py-1.5 px-3 rounded-xl border border-white/20 flex items-center justify-center gap-1 transition-colors"
+                title="Download .ics file for Apple Calendar / iPhone"
+              >
+                <span>🍏</span> Apple / Outlook Calendar (.ics)
               </button>
-
-              {calendarOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white text-wedding-slate rounded-xl shadow-2xl border border-wedding-rose/20 p-1.5 z-30 space-y-1 animate-fadeIn">
-                  <a
-                    href={getGoogleCalendarUrl(weddingData)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setCalendarOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-lg transition-colors text-wedding-slate font-medium"
-                  >
-                    <span className="text-base leading-none">📅</span>
-                    Google Calendar
-                  </a>
-                  <button
-                    onClick={() => {
-                      downloadIcsFile(weddingData);
-                      setCalendarOpen(false);
-                    }}
-                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-lg transition-colors text-wedding-slate font-medium"
-                  >
-                    <span className="text-base leading-none">🍏</span>
-                    Apple Calendar (.ics)
-                  </button>
-                  <a
-                    href={getOutlookCalendarUrl(weddingData)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setCalendarOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-wedding-pink/40 rounded-lg transition-colors text-wedding-slate font-medium"
-                  >
-                    <span className="text-base leading-none">📧</span>
-                    Outlook Web
-                  </a>
-                </div>
-              )}
             </div>
           </div>
         </div>

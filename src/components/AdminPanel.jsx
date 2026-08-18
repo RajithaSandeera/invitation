@@ -18,6 +18,7 @@ export default function AdminPanel({ isOpen, onClose }) {
   const [sideFilter, setSideFilter] = useState('ALL'); // 'ALL', 'Groom', 'Bride'
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'yes', 'no'
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState(null);
 
   // Manual Add Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,19 +43,30 @@ export default function AdminPanel({ isOpen, onClose }) {
     if (isOpen && isAuthenticated) {
       refreshData();
       setSheetUrl(getGoogleSheetUrl());
+
+      // Auto-poll Google Sheet every 12 seconds for cross-device updates
+      const interval = setInterval(() => {
+        refreshData();
+      }, 12000);
+      return () => clearInterval(interval);
     }
   }, [isOpen, isAuthenticated]);
 
   const refreshData = async () => {
     setRsvps(getAllRSVPs());
     setIsSyncing(true);
+    setSyncStatusMsg(null);
     try {
-      const remoteData = await fetchRSVPsFromGoogleSheets();
-      if (remoteData) {
-        setRsvps(remoteData);
+      const result = await fetchRSVPsFromGoogleSheets();
+      if (result && result.success) {
+        setRsvps(result.data);
+        setSyncStatusMsg({ type: 'success', text: `Synced ${result.data.length} guest records live from Google Sheet!` });
+      } else if (result && !result.success) {
+        setSyncStatusMsg({ type: 'error', text: result.error });
       }
     } catch (e) {
       console.error(e);
+      setSyncStatusMsg({ type: 'error', text: e.message || "Failed to sync with Google Sheet." });
     } finally {
       setIsSyncing(false);
     }
@@ -114,6 +126,7 @@ export default function AdminPanel({ isOpen, onClose }) {
     e.preventDefault();
     setGoogleSheetUrl(sheetUrl);
     setShowSheetModal(false);
+    refreshData();
     alert("Google Sheet Webhook URL saved successfully!");
   };
 
@@ -151,18 +164,25 @@ function doGet(e) {
   var rsvps = [];
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i];
+    if (!r[1] || String(r[1]).trim() === "" || String(r[1]).trim().toLowerCase() === "name") continue;
+    
+    var sideVal = r[3] ? String(r[3]) : 'Groom';
+    var statusVal = r[4] ? String(r[4]).toLowerCase() : 'attending';
+    var mealVal = r[7] ? String(r[7]).toLowerCase() : 'non-veg';
+    var drinksVal = r[8] ? String(r[8]).toLowerCase() : 'yes';
+
     rsvps.push({
       id: 'gsheet-' + i,
-      timestamp: r[0],
-      name: r[1],
-      phone: r[2],
-      side: r[3] && r[3].indexOf('Groom') !== -1 ? 'Groom' : 'Bride',
-      attending: r[4] === 'Declined' ? 'no' : 'yes',
+      timestamp: r[0] ? String(r[0]) : new Date().toISOString(),
+      name: String(r[1]).trim(),
+      phone: r[2] ? String(r[2]).trim() : 'N/A',
+      side: sideVal.indexOf('Bride') !== -1 || sideVal.indexOf('Divya') !== -1 ? 'Bride' : 'Groom',
+      attending: statusVal.indexOf('declined') !== -1 || statusVal.indexOf('no') !== -1 || statusVal.indexOf('not') !== -1 ? 'no' : 'yes',
       guestCount: parseInt(r[5]) || 1,
-      guestNames: r[6] === 'None' ? '' : r[6],
-      foodPreference: r[7] && r[7].indexOf('Vegetarian') !== -1 && r[7].indexOf('Non') === -1 ? 'veg' : 'non-veg',
-      needsDrinks: r[8] && r[8].indexOf('Yes') !== -1 ? 'yes' : 'no',
-      dietaryNotes: r[9] === 'None' ? '' : r[9],
+      guestNames: (!r[6] || String(r[6]).trim() === 'None') ? '' : String(r[6]).trim(),
+      foodPreference: mealVal.indexOf('veg') !== -1 && mealVal.indexOf('non') === -1 ? 'veg' : 'non-veg',
+      needsDrinks: drinksVal.indexOf('yes') !== -1 || drinksVal.indexOf('🥂') !== -1 ? 'yes' : 'no',
+      dietaryNotes: (!r[9] || String(r[9]).trim() === 'None') ? '' : String(r[9]).trim(),
       checkedIn: false
     });
   }
@@ -398,6 +418,33 @@ function doGet(e) {
                 </button>
               </div>
             </div>
+
+            {/* SYNC STATUS NOTIFICATION BANNER */}
+            {syncStatusMsg && (
+              <div className={`p-3.5 rounded-2xl text-xs flex items-start justify-between gap-3 border shadow-md animate-fadeIn ${
+                syncStatusMsg.type === 'success'
+                  ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-200'
+                  : 'bg-amber-950/90 border-amber-500/50 text-amber-200'
+              }`}>
+                <div className="space-y-1 leading-relaxed">
+                  <p className="font-bold flex items-center gap-1.5 text-sm">
+                    {syncStatusMsg.type === 'success' ? '✅ Live Sync Complete' : '⚠️ Google Sheet Sync Notice'}
+                  </p>
+                  <p className="text-white/80">{syncStatusMsg.text}</p>
+                  {syncStatusMsg.type === 'error' && (
+                    <div className="pt-1 text-[11px] text-amber-300/90 font-mono">
+                      💡 Quick Fix: Open Google Apps Script ➜ Click "Deploy" ➜ "Manage deployments" ➜ Click ✏️ (Edit) ➜ Change Version to "New version" ➜ Click "Deploy".
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSyncStatusMsg(null)}
+                  className="p-1 text-white/60 hover:text-white shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* GUEST RECORDS TABLE */}
             <div className="bg-slate-800/60 rounded-2xl border border-white/10 overflow-hidden shadow-lg">
